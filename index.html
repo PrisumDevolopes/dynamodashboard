@@ -37,16 +37,19 @@
             margin-top: 20px;
             display: none;
         }
-        #codeInfo {
+        #loadingInfo {
             margin-top: 20px;
             display: none;
         }
-        .code {
-            font-family: monospace;
-            background-color: #40444b;
-            padding: 10px;
-            border-radius: 4px;
-            word-break: break-all;
+        .avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+        .error {
+            color: #ff6b6b;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -54,16 +57,16 @@
     <div class="container">
         <h1>Discord Sign In Demo</h1>
         <button id="signInBtn" class="btn">Sign In With Discord</button>
+        <div id="loadingInfo">
+            <p>Loading user information...</p>
+        </div>
         <div id="userInfo">
-            <h2>User Authenticated</h2>
-            <p>You've successfully authenticated with Discord!</p>
+            <img id="userAvatar" class="avatar" src="" alt="User Avatar">
+            <h2 id="userName"></h2>
+            <p>Discord Tag: <span id="userDiscriminator"></span></p>
+            <p>Email: <span id="userEmail"></span></p>
         </div>
-        <div id="codeInfo">
-            <h2>Authorization Code Received</h2>
-            <p>The authorization code is:</p>
-            <p class="code" id="authCode"></p>
-            <p>In a full implementation, this code would be sent to your server to exchange for an access token and fetch user information.</p>
-        </div>
+        <div id="errorInfo" class="error"></div>
     </div>
 
     <script>
@@ -72,9 +75,9 @@
         const scope = 'email identify guilds';
 
         const signInBtn = document.getElementById('signInBtn');
+        const loadingInfo = document.getElementById('loadingInfo');
         const userInfo = document.getElementById('userInfo');
-        const codeInfo = document.getElementById('codeInfo');
-        const authCodeElement = document.getElementById('authCode');
+        const errorInfo = document.getElementById('errorInfo');
 
         signInBtn.addEventListener('click', () => {
             const authUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
@@ -87,16 +90,51 @@
 
         if (code) {
             signInBtn.style.display = 'none';
-            userInfo.style.display = 'block';
-            codeInfo.style.display = 'block';
-            authCodeElement.textContent = code;
+            loadingInfo.style.display = 'block';
 
-            // In a real application, you would send this code to your server
-            // to exchange it for an access token and fetch user information.
-            // For this demo, we'll just display the code.
+            // Exchange the code for an access token
+            fetch('https://discord.com/api/oauth2/token', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    client_id: clientId,
+                    client_secret: 'YOUR_CLIENT_SECRET', // Replace with your actual client secret
+                    grant_type: 'authorization_code',
+                    code: code,
+                    redirect_uri: redirectUri
+                }),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error_description || 'Failed to get access token');
+                }
+                return fetch('https://discord.com/api/users/@me', {
+                    headers: {
+                        Authorization: `Bearer ${data.access_token}`
+                    }
+                });
+            })
+            .then(response => response.json())
+            .then(user => {
+                loadingInfo.style.display = 'none';
+                userInfo.style.display = 'block';
 
-            // Optionally, you could remove the code from the URL for security:
-            // window.history.replaceState({}, document.title, redirectUri);
+                document.getElementById('userAvatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+                document.getElementById('userName').textContent = user.username;
+                document.getElementById('userDiscriminator').textContent = `#${user.discriminator}`;
+                document.getElementById('userEmail').textContent = user.email || 'Not provided';
+
+                // Optionally, remove the code from the URL for security
+                window.history.replaceState({}, document.title, redirectUri);
+            })
+            .catch(error => {
+                loadingInfo.style.display = 'none';
+                errorInfo.textContent = `Error: ${error.message}`;
+                errorInfo.style.display = 'block';
+            });
         }
     </script>
 </body>
