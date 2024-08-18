@@ -37,11 +37,16 @@
             margin-top: 20px;
             display: none;
         }
-        .avatar {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            margin-bottom: 10px;
+        #codeInfo {
+            margin-top: 20px;
+            display: none;
+        }
+        .code {
+            font-family: monospace;
+            background-color: #40444b;
+            padding: 10px;
+            border-radius: 4px;
+            word-break: break-all;
         }
     </style>
 </head>
@@ -50,9 +55,14 @@
         <h1>Discord Sign In Demo</h1>
         <button id="signInBtn" class="btn">Sign In With Discord</button>
         <div id="userInfo">
-            <img id="avatar" class="avatar" src="" alt="User avatar">
-            <h2 id="username"></h2>
-            <p id="email"></p>
+            <h2>User Authenticated</h2>
+            <p>You've successfully authenticated with Discord!</p>
+        </div>
+        <div id="codeInfo">
+            <h2>Authorization Code Received</h2>
+            <p>The authorization code is:</p>
+            <p class="code" id="authCode"></p>
+            <p>In a full implementation, this code would be sent to your server to exchange for an access token and fetch user information.</p>
         </div>
     </div>
 
@@ -63,9 +73,8 @@
 
         const signInBtn = document.getElementById('signInBtn');
         const userInfo = document.getElementById('userInfo');
-        const avatar = document.getElementById('avatar');
-        const username = document.getElementById('username');
-        const email = document.getElementById('email');
+        const codeInfo = document.getElementById('codeInfo');
+        const authCodeElement = document.getElementById('authCode');
 
         signInBtn.addEventListener('click', () => {
             const authUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
@@ -77,32 +86,17 @@
         const code = urlParams.get('code');
 
         if (code) {
-            // Exchange the code for an access token
-            fetch('/api/token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ code }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Use the access token to fetch user information
-                fetch('https://discord.com/api/users/@me', {
-                    headers: {
-                        Authorization: `Bearer ${data.access_token}`,
-                    },
-                })
-                .then(response => response.json())
-                .then(user => {
-                    // Display user information
-                    signInBtn.style.display = 'none';
-                    userInfo.style.display = 'block';
-                    avatar.src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
-                    username.textContent = user.username;
-                    email.textContent = user.email;
-                });
-            });
+            signInBtn.style.display = 'none';
+            userInfo.style.display = 'block';
+            codeInfo.style.display = 'block';
+            authCodeElement.textContent = code;
+
+            // In a real application, you would send this code to your server
+            // to exchange it for an access token and fetch user information.
+            // For this demo, we'll just display the code.
+
+            // Optionally, you could remove the code from the URL for security:
+            // window.history.replaceState({}, document.title, redirectUri);
         }
     </script>
 </body>
