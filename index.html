@@ -1,94 +1,59 @@
-<html><head><base href="https://discord.com/oauth2/authorize?client_id=1267529926060277961&response_type=code&redirect_uri=https%3A%2F%2Fdynamodashboard.vercel.app%2F&scope=email+identify+guilds">
+<html><head><base href="https://dynamodashboard.vercel.app/" target="_blank">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Product Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <title>Discord Sign In Demo</title>
     <style>
         body {
-            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-family: Arial, sans-serif;
             background-color: #36393f;
             color: #ffffff;
-            margin: 0;
-            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            height: 100vh;
+            margin: 0;
         }
-        #dashboard {
-            background-color: #2f3136;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        .container {
             text-align: center;
-            max-width: 400px;
-            width: 100%;
+            background-color: #2f3136;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        #profile-picture {
-            width: 128px;
-            height: 128px;
-            border-radius: 50%;
-            margin-bottom: 20px;
-            border: 4px solid #7289da;
-        }
-        #username {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        #email, #guild-count {
-            font-size: 16px;
-            color: #b9bbbe;
-            margin-bottom: 20px;
-        }
-        #login-button {
+        .btn {
             background-color: #7289da;
-            color: #ffffff;
+            color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 4px;
+            padding: 10px 20px;
             font-size: 16px;
             cursor: pointer;
+            border-radius: 4px;
             transition: background-color 0.3s;
         }
-        #login-button:hover {
-            background-color: #677bc4;
+        .btn:hover {
+            background-color: #5b6eae;
         }
-        .loading {
-            display: none;
+        #userInfo {
             margin-top: 20px;
+            display: none;
         }
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #7289da;
+        .avatar {
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-        #error-message {
-            color: #ff6b6b;
-            margin-top: 20px;
-            display: none;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-    <div id="dashboard">
-        <img id="profile-picture" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Discord profile picture">
-        <div id="username">Welcome, Discordian!</div>
-        <div id="email">Please log in to view your details</div>
-        <div id="guild-count"></div>
-        <button id="login-button" onclick="login()">Login with Discord</button>
-        <div id="loading" class="loading"></div>
-        <div id="error-message"></div>
+    <div class="container">
+        <h1>Discord Sign In Demo</h1>
+        <button id="signInBtn" class="btn">Sign In With Discord</button>
+        <div id="userInfo">
+            <img id="avatar" class="avatar" src="" alt="User avatar">
+            <h2 id="username"></h2>
+            <p id="email"></p>
+        </div>
     </div>
 
     <script>
@@ -96,70 +61,48 @@
         const redirectUri = 'https://dynamodashboard.vercel.app/';
         const scope = 'email identify guilds';
 
-        function login() {
-            window.location.href = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
-        }
+        const signInBtn = document.getElementById('signInBtn');
+        const userInfo = document.getElementById('userInfo');
+        const avatar = document.getElementById('avatar');
+        const username = document.getElementById('username');
+        const email = document.getElementById('email');
 
-        async function fetchUserInfo(code) {
-            try {
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('login-button').style.display = 'none';
-                document.getElementById('error-message').style.display = 'none';
+        signInBtn.addEventListener('click', () => {
+            const authUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+            window.location.href = authUrl;
+        });
 
-                // Use the correct endpoint for token exchange
-                const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', 
-                    new URLSearchParams({
-                        client_id: clientId,
-                        client_secret: 'YOUR_CLIENT_SECRET', // Replace with your actual client secret
-                        grant_type: 'authorization_code',
-                        code: code,
-                        redirect_uri: redirectUri
-                    }),
-                    {
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        }
-                    }
-                );
-
-                const { access_token } = tokenResponse.data;
-
-                const userResponse = await axios.get('https://discord.com/api/users/@me', {
-                    headers: {
-                        Authorization: `Bearer ${access_token}`
-                    }
-                });
-
-                const guildsResponse = await axios.get('https://discord.com/api/users/@me/guilds', {
-                    headers: {
-                        Authorization: `Bearer ${access_token}`
-                    }
-                });
-
-                const user = userResponse.data;
-                const guilds = guildsResponse.data;
-
-                document.getElementById('profile-picture').src = user.avatar 
-                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` 
-                    : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator) % 5}.png`;
-                document.getElementById('username').textContent = `${user.username}#${user.discriminator}`;
-                document.getElementById('email').textContent = user.email;
-                document.getElementById('guild-count').textContent = `Servers: ${guilds.length}`;
-                document.getElementById('loading').style.display = 'none';
-            } catch (error) {
-                console.error('Error fetching user info:', error);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('login-button').style.display = 'block';
-                document.getElementById('error-message').textContent = 'An error occurred while fetching your information. Please try again.';
-                document.getElementById('error-message').style.display = 'block';
-            }
-        }
-
-        // Check if there's a code in the URL (after Discord OAuth redirect)
+        // Check for the authorization code in the URL
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
+
         if (code) {
-            fetchUserInfo(code);
+            // Exchange the code for an access token
+            fetch('/api/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Use the access token to fetch user information
+                fetch('https://discord.com/api/users/@me', {
+                    headers: {
+                        Authorization: `Bearer ${data.access_token}`,
+                    },
+                })
+                .then(response => response.json())
+                .then(user => {
+                    // Display user information
+                    signInBtn.style.display = 'none';
+                    userInfo.style.display = 'block';
+                    avatar.src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+                    username.textContent = user.username;
+                    email.textContent = user.email;
+                });
+            });
         }
     </script>
 </body>
