@@ -103,44 +103,13 @@
             codeInfo.style.display = 'block';
             authCodeElement.textContent = code;
 
-            // Exchange the code for an access token
-            fetch('https://discord.com/api/oauth2/token', {
-                method: 'POST',
-                body: new URLSearchParams({
-                    client_id: clientId,
-                    client_secret: 'YOUR_CLIENT_SECRET', // Replace with your actual client secret
-                    grant_type: 'authorization_code',
-                    code: code,
-                    redirect_uri: redirectUri
-                }),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const accessToken = data.access_token;
-                // Fetch user information
-                return fetch('https://discord.com/api/users/@me', {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`
-                    }
-                });
-            })
-            .then(response => response.json())
-            .then(user => {
-                userDetails.innerHTML = `
-                    <img id="userAvatar" src="https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png" alt="User Avatar">
-                    <p><strong>Username:</strong> ${user.username}</p>
-                    <p><strong>Discriminator:</strong> ${user.discriminator}</p>
-                    <p><strong>ID:</strong> ${user.id}</p>
-                    <p><strong>Email:</strong> ${user.email}</p>
-                `;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                userDetails.innerHTML = '<p>Error fetching user information</p>';
-            });
+            // Note: Token exchange and user info fetching should be done on the server side
+            // This is a client-side demonstration and is not secure for production use
+            userDetails.innerHTML = `
+                <p><strong>Authorization Code:</strong> ${code}</p>
+                <p>For security reasons, token exchange and user info fetching should be done on the server side.</p>
+                <p>The authorization code above should be sent to your server to complete the OAuth2 flow.</p>
+            `;
 
             // Optionally, you could remove the code from the URL for security:
             // window.history.replaceState({}, document.title, redirectUri);
