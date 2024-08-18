@@ -1,11 +1,11 @@
-<html><head><base href="https://dynamo-gamma.vercel.app/">
+<html><head><base href="https://discord.com/oauth2/authorize?client_id=1267529926060277961&response_type=code&redirect_uri=https%3A%2F%2Fdynamodashboard.vercel.app%2F&scope=email+identify+guilds">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discord Product Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             background-color: #36393f;
             color: #ffffff;
             margin: 0;
@@ -13,27 +13,30 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
         }
         #dashboard {
             background-color: #2f3136;
             border-radius: 8px;
-            padding: 20px;
+            padding: 30px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             text-align: center;
+            max-width: 400px;
+            width: 100%;
         }
         #profile-picture {
             width: 128px;
             height: 128px;
             border-radius: 50%;
             margin-bottom: 20px;
+            border: 4px solid #7289da;
         }
         #username {
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 10px;
         }
-        #email {
+        #email, #guild-count {
             font-size: 16px;
             color: #b9bbbe;
             margin-bottom: 20px;
@@ -42,7 +45,7 @@
             background-color: #7289da;
             color: #ffffff;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 4px;
             font-size: 16px;
             cursor: pointer;
@@ -51,6 +54,25 @@
         #login-button:hover {
             background-color: #677bc4;
         }
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #7289da;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body>
@@ -58,12 +80,14 @@
         <img id="profile-picture" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Discord profile picture">
         <div id="username">Welcome, Discordian!</div>
         <div id="email">Please log in to view your details</div>
+        <div id="guild-count"></div>
         <button id="login-button" onclick="login()">Login with Discord</button>
+        <div id="loading" class="loading"></div>
     </div>
 
     <script>
         const clientId = '1267529926060277961';
-        const redirectUri = 'https://dynamo-gamma.vercel.app/';
+        const redirectUri = 'https://dynamodashboard.vercel.app/';
         const scope = 'email identify guilds';
 
         function login() {
@@ -72,7 +96,10 @@
 
         async function fetchUserInfo(code) {
             try {
-                const response = await axios.post('/api/discord-token', { code });
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('login-button').style.display = 'none';
+
+                const response = await axios.post('https://dynamodashboard.vercel.app/api/discord-token', { code });
                 const { access_token } = response.data;
 
                 const userResponse = await axios.get('https://discord.com/api/users/@me', {
@@ -81,13 +108,27 @@
                     }
                 });
 
+                const guildsResponse = await axios.get('https://discord.com/api/users/@me/guilds', {
+                    headers: {
+                        Authorization: `Bearer ${access_token}`
+                    }
+                });
+
                 const user = userResponse.data;
-                document.getElementById('profile-picture').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
-                document.getElementById('username').textContent = user.username;
+                const guilds = guildsResponse.data;
+
+                document.getElementById('profile-picture').src = user.avatar 
+                    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` 
+                    : `https://cdn.discordapp.com/embed/avatars/${parseInt(user.discriminator) % 5}.png`;
+                document.getElementById('username').textContent = `${user.username}#${user.discriminator}`;
                 document.getElementById('email').textContent = user.email;
-                document.getElementById('login-button').style.display = 'none';
+                document.getElementById('guild-count').textContent = `Servers: ${guilds.length}`;
+                document.getElementById('loading').style.display = 'none';
             } catch (error) {
                 console.error('Error fetching user info:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('login-button').style.display = 'block';
+                alert('An error occurred while fetching your information. Please try again.');
             }
         }
 
